@@ -65,6 +65,15 @@ AABCharacterPlayer::AABCharacterPlayer()
 	CurrentCharacterControlType = ECharacterControlType::Quater;
 }
 
+void AABCharacterPlayer::PostInitializeComponents()
+{
+	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+
+	Super::PostInitializeComponents();
+
+	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("End"));
+}
+
 void AABCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
@@ -142,7 +151,7 @@ void AABCharacterPlayer::OnRep_Owner()
 
 void AABCharacterPlayer::PostNetInit()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+	AB_LOG(LogABNetwork, Log, TEXT("%s %s"), TEXT("Begin"), *GetName());
 
 	Super::PostNetInit();
 

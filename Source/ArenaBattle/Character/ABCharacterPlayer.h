@@ -20,6 +20,7 @@ public:
 	AABCharacterPlayer();
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void SetDead() override;
 	virtual void PossessedBy(AController* NewController) override;
