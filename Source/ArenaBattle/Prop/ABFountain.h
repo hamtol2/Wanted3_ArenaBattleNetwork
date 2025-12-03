@@ -33,6 +33,9 @@ protected:
 	UFUNCTION()
 	void OnRep_ServerRotationYaw();
 
+	UFUNCTION()
+	void OnRep_ServerLightColor();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -56,4 +59,14 @@ public:
 
 	// 서버로부터 데이터를 받고, 그 다음에 데이터를 받기까지 걸린 시간.
 	float ClientTimeBetweenLastUpdate = 0.0f;
+
+	// 의도적으로 네트워크를 포화상태로 만들기 위한 변수.
+	//UPROPERTY(Replicated)
+	//TArray<float> BigData;
+	
+	//// 값 설정에 사용할 변수.
+	//float BigDataElement = 0.0f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_ServerLightColor)
+	FLinearColor ServerLightColor;
 };
