@@ -46,4 +46,11 @@ public:
 
 	// 회전 속도 변수.
 	float RotationRate = 30.0f;
+
+	// 클라이언트에서 회전 보간을 처리하기위한 변수.
+	// 서버로부터 패킷을 받은 후에 지난 시간.
+	float ClientTimeSinceUpdate = 0.0f;
+
+	// 서버로부터 데이터를 받고, 그 다음에 데이터를 받기까지 걸린 시간.
+	float ClientTimeBetweenLastUpdate = 0.0f;
 };
