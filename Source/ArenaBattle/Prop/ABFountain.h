@@ -27,6 +27,9 @@ protected:
 		class FInBunch& InBunch, 
 		class UNetConnection* Connection) override;
 
+	// 연관성 처리 함수 오버라이드.
+	virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
+
 	UFUNCTION()
 	void OnRep_ServerRotationYaw();
 

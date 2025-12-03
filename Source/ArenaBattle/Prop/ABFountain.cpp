@@ -35,7 +35,10 @@ AABFountain::AABFountain()
 	bReplicates = true;
 
 	// 네트워크 전송 빈도 낮추기 (1초에 한 번).
-	NetUpdateFrequency = 1.0f;
+	SetNetUpdateFrequency(1.0f);
+
+	// NetCullDistance 값 낮게 설정.
+	SetNetCullDistanceSquared(4000000.0f);
 }
 
 // Called when the game starts or when spawned
@@ -77,6 +80,25 @@ void AABFountain::OnActorChannelOpen(
 	Super::OnActorChannelOpen(InBunch, Connection);
 
 	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("End"));
+}
+
+bool AABFountain::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
+{
+	bool NetRelevantResult
+		= Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+
+	if (!NetRelevantResult)
+	{
+		AB_LOG(
+			LogABNetwork, 
+			Log, 
+			TEXT("Not Relevant: [%s] %s"), 
+			*RealViewer->GetName(), 
+			*SrcLocation.ToCompactString()
+		);
+	}
+
+	return NetRelevantResult;
 }
 
 void AABFountain::OnRep_ServerRotationYaw()
@@ -124,7 +146,7 @@ void AABFountain::Tick(float DeltaTime)
 
 		// 서버로부터 데이터를 받은 이후에 지난 시간 업데이트.
 		ClientTimeSinceUpdate += DeltaTime;
-
+		
 		// ClientTimeSinceUpdate 값이 작은지 확인.
 		// 사실 0인지 비교하는 것과 같음. 
 		// 0에 근접한 (보간에 의미가 없는) 시간 차이인지 확인.
@@ -132,24 +154,24 @@ void AABFountain::Tick(float DeltaTime)
 		{
 			return;
 		}
-
+		
 		// 보간(Interpolation) 처리.
 		// 다음 네트워크 패킷 전송 때 수신할 값을 예측.
 		const float EstimateRotationYaw
 			= ServerRotationYaw + RotationRate * ClientTimeBetweenLastUpdate;
-
+		
 		// 보간할 비율(t,a) 구하기.
 		const float LerpRatio 
 			= ClientTimeSinceUpdate / ClientTimeBetweenLastUpdate;
-
+		
 		// 보간.
 		const float ClientNewYaw 
 			= FMath::Lerp(ServerRotationYaw, EstimateRotationYaw, LerpRatio);
-
+		
 		// 회전 값 설정.
 		FRotator ClientRotator = RootComponent->GetComponentRotation();
 		ClientRotator.Yaw = ClientNewYaw;
-
+		
 		RootComponent->SetWorldRotation(ClientRotator);
 	}
 }
