@@ -36,6 +36,12 @@ protected:
 	UFUNCTION()
 	void OnRep_ServerLightColor();
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCChangeLightColor(const FLinearColor& NewLightColor);
+
+	UFUNCTION(Server, Unreliable)
+	void ServerRPCChangeLightColor();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
