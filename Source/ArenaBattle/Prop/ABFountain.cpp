@@ -40,6 +40,9 @@ AABFountain::AABFountain()
 
 	// NetCullDistance 값 낮게 설정.
 	SetNetCullDistanceSquared(4000000.0f);
+
+	// 휴면 상태 값 설정.
+	//SetNetDormancy(DORM_Initial);
 }
 
 // Called when the game starts or when spawned
@@ -79,6 +82,19 @@ void AABFountain::BeginPlay()
 			1.0f,
 			true
 		);
+
+		// 휴면 상태를 깨우기 위한 타이머.
+		FTimerHandle Handle2;
+		GetWorld()->GetTimerManager().SetTimer(
+			Handle2,
+			FTimerDelegate::CreateLambda([&]()
+				{
+					//FlushNetDormancy();
+				}),
+				10.0f,
+				false
+			);
+
 	}
 
 }
@@ -93,7 +109,8 @@ void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	// 데이터 전송 테스트를 위한 변수 등록.
 	//DOREPLIFETIME(AABFountain, BigData);
 
-	DOREPLIFETIME(AABFountain, ServerLightColor);
+	//DOREPLIFETIME(AABFountain, ServerLightColor);
+	DOREPLIFETIME_CONDITION(AABFountain, ServerLightColor, COND_InitialOnly);
 }
 
 void AABFountain::OnActorChannelOpen(
