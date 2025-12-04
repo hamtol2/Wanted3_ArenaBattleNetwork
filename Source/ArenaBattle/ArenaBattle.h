@@ -5,6 +5,14 @@
 #include "CoreMinimal.h"
 
 // Local Role.
+#define LOG_SUBLOCALROLEINFO \
+	*(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetOwner()->GetLocalRole()))
+
+// Remote Role.
+#define LOG_SUBREMOTEROLEINFO \
+	*(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetOwner()->GetRemoteRole()))
+
+// Local Role.
 #define LOG_LOCALROLEINFO \
 	*(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetLocalRole()))
 
@@ -24,6 +32,11 @@
 #define AB_LOG(LogCat, Verbosity, Format, ...) \
 UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), \
 	LOG_NETMODEINFO, LOG_LOCALROLEINFO, LOG_REMOTEROLEINFO, LOG_CALLINFO, \
+	*FString::Printf(Format, ##__VA_ARGS__))
+
+#define AB_SUBLOG(LogCat, Verbosity, Format, ...) \
+UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), \
+	LOG_NETMODEINFO, LOG_SUBLOCALROLEINFO, LOG_SUBREMOTEROLEINFO, LOG_CALLINFO, \
 	*FString::Printf(Format, ##__VA_ARGS__))
 
 DECLARE_LOG_CATEGORY_EXTERN(LogABNetwork, Log, All);
