@@ -222,7 +222,7 @@ bool AABFountain::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewT
 
 void AABFountain::OnRep_ServerRotationYaw()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("Yaw: %f"), ServerRotationYaw);
+	//AB_LOG(LogABNetwork, Log, TEXT("Yaw: %f"), ServerRotationYaw);
 
 	// 변경된 회전 값을 반영해 새로운 회전 값 생성 후 적용.
 	FRotator NewRotator = RootComponent->GetComponentRotation();
@@ -239,12 +239,12 @@ void AABFountain::OnRep_ServerRotationYaw()
 
 void AABFountain::OnRep_ServerLightColor()
 {
-	AB_LOG(
-		LogABNetwork,
-		Log,
-		TEXT("LightColor: %s"),
-		*ServerLightColor.ToString()
-	);
+	//AB_LOG(
+	//	LogABNetwork,
+	//	Log,
+	//	TEXT("LightColor: %s"),
+	//	*ServerLightColor.ToString()
+	//);
 
 	// 컴포넌트 검색.
 	UPointLightComponent* PointLight = Cast<UPointLightComponent>(
@@ -300,12 +300,12 @@ bool AABFountain::ServerRPCChangeLightColor_Validate()
 void AABFountain::ClientRPCChangeLightColor_Implementation(
 	const FLinearColor& NewLightColor)
 {
-	AB_LOG(
-		LogABNetwork,
-		Log,
-		TEXT("LightColor: %s"),
-		*NewLightColor.ToString()
-	);
+	//AB_LOG(
+	//	LogABNetwork,
+	//	Log,
+	//	TEXT("LightColor: %s"),
+	//	*NewLightColor.ToString()
+	//);
 
 	// 컴포넌트 검색.
 	UPointLightComponent* PointLight = Cast<UPointLightComponent>(

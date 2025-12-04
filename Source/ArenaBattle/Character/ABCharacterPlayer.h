@@ -72,7 +72,32 @@ protected:
 
 	ECharacterControlType CurrentCharacterControlType;
 
+	// 프로퍼티를 리플리케이션에 등록.
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	void Attack();
+
+	// ABCharacterBAse에 있는 AttackHitCheck 오버라이드.
+	virtual void AttackHitCheck() override;
+
+	// Client -> Server 공격 명령 처리 요청에 사용되는 Server RPC.
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCAttack();
+
+	// 클라이언트(서버 포함)에 공격 명령 전달을 위한 Multicast RPC.
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCAttack();
+
+	UFUNCTION()
+	void OnRep_CanAttack();
+
+	// 현재 공격 중인지 판단하는 변수.
+	UPROPERTY(ReplicatedUsing = OnRep_CanAttack)
+	uint8 bCanAttack : 1;
+
+	// 첫 번째 공격 애니메이션 재생 길이(단위: 초).
+	float AttackTime = 1.4667f;
 
 // UI Section
 protected:
