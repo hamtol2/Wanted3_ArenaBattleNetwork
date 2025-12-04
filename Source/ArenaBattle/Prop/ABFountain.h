@@ -39,8 +39,11 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCChangeLightColor(const FLinearColor& NewLightColor);
 
-	UFUNCTION(Server, Unreliable)
+	UFUNCTION(Server, Unreliable, WithValidation)
 	void ServerRPCChangeLightColor();
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCChangeLightColor(const FLinearColor& NewLightColor);
 
 public:	
 	// Called every frame

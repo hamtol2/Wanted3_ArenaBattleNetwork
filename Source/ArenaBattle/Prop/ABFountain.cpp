@@ -88,6 +88,17 @@ void AABFountain::BeginPlay()
 					//);
 					//
 					//MulticastRPCChangeLightColor(NewLightColor);
+
+					const FLinearColor NewLightColor = FLinearColor(
+						FMath::RandRange(0.0f, 1.0f),
+						FMath::RandRange(0.0f, 1.0f),
+						FMath::RandRange(0.0f, 1.0f),
+						1.0f
+					);
+
+					// Client RPC 요청.
+					ClientRPCChangeLightColor(NewLightColor);
+
 				}),
 				1.0f,
 				true
@@ -155,14 +166,14 @@ void AABFountain::BeginPlay()
 		// 분수대 액터에 오너십 설정.
 		//SetOwner(GetWorld()->GetFirstPlayerController());
 
-		FTimerHandle Handle;
-		GetWorld()->GetTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([&]()
-				{
-					ServerRPCChangeLightColor();
-				}), 1.0f, true
-		);
+		//FTimerHandle Handle;
+		//GetWorld()->GetTimerManager().SetTimer(
+		//	Handle,
+		//	FTimerDelegate::CreateLambda([&]()
+		//		{
+		//			ServerRPCChangeLightColor();
+		//		}), 1.0f, true
+		//);
 	}
 }
 
@@ -279,6 +290,32 @@ void AABFountain::ServerRPCChangeLightColor_Implementation()
 
 	// 멀티캐스트 RPC로 모든 곳에 전달.
 	MulticastRPCChangeLightColor(NewLightColor);
+}
+
+bool AABFountain::ServerRPCChangeLightColor_Validate()
+{
+	return true;
+}
+
+void AABFountain::ClientRPCChangeLightColor_Implementation(
+	const FLinearColor& NewLightColor)
+{
+	AB_LOG(
+		LogABNetwork,
+		Log,
+		TEXT("LightColor: %s"),
+		*NewLightColor.ToString()
+	);
+
+	// 컴포넌트 검색.
+	UPointLightComponent* PointLight = Cast<UPointLightComponent>(
+		GetComponentByClass(UPointLightComponent::StaticClass())
+	);
+
+	if (PointLight)
+	{
+		PointLight->SetLightColor(NewLightColor);
+	}
 }
 
 // Called every frame
