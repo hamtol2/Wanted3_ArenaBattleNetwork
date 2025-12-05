@@ -78,15 +78,19 @@ protected:
 
 	void Attack();
 
+	// 공격 애니메이션 재생 함수 (재사용 가능하도록).
+	void PlayAttackAnimation();
+
 	// ABCharacterBAse에 있는 AttackHitCheck 오버라이드.
 	virtual void AttackHitCheck() override;
 
 	// Client -> Server 공격 명령 처리 요청에 사용되는 Server RPC.
+	// 클라이언트에서 공격을 시작한 시간을 보내도록 함수 업데이트.
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCAttack();
+	void ServerRPCAttack(float AttackStartTime);
 
 	// 클라이언트(서버 포함)에 공격 명령 전달을 위한 Multicast RPC.
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
 
 	UFUNCTION()
@@ -98,6 +102,12 @@ protected:
 
 	// 첫 번째 공격 애니메이션 재생 길이(단위: 초).
 	float AttackTime = 1.4667f;
+
+	// 이전에 공격 시작한 시간 기록용.
+	float LastAttackStartTime = 0.0f;
+
+	// 클라이언트와 서버의 시간 차이 계산용 변수.
+	float AttackTimeDifference = 0.0f;
 
 // UI Section
 protected:

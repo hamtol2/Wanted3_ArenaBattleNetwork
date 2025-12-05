@@ -20,6 +20,8 @@
 
 #include "Net/UnrealNetwork.h"
 
+#include "GameFramework/GameStateBase.h"
+
 AABCharacterPlayer::AABCharacterPlayer()
 {
 	// Camera
@@ -299,36 +301,48 @@ void AABCharacterPlayer::Attack()
 	// 공격 가능한 경우.
 	if (bCanAttack)
 	{
-		// 공격 입력 들어오면 서버로 알림.
-		ServerRPCAttack();
+		// 클라이언트.
+		if (!HasAuthority())
+		{
+			bCanAttack = false;
 
-		//// 공격 중이라고 설정.
-		//bCanAttack = false;
-		//
-		//// Movement Setting
-		//GetCharacterMovement()->SetMovementMode//(EMovementMode::MOVE_None);
-		//
-		//// 공격 종료 처리를 위해 타이머 사용.
-		//FTimerHandle Handle;
-		//GetWorld()->GetTimerManager().SetTimer(
-		//	Handle,
-		//	FTimerDelegate::CreateLambda([&]()
-		//		{
-		//			// 다시 공격 가능한 상태로 설정.
-		//			bCanAttack = true;
-		//
-		//			// 공격이 종료되면 다시 이동 가능하도록 모드 설정.
-		//			GetCharacterMovement()->SetMovementMode(
-		//				EMovementMode::MOVE_Walking
-		//			);
-		//		}),
-		//	AttackTime, false
-		//);
-		//
-		//// Animation Setting
-		//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		//AnimInstance->Montage_Play(ComboActionMontage);
+			GetCharacterMovement()->SetMovementMode(
+				EMovementMode::MOVE_None
+			);
+
+			// 공격 종료 처리를 위한 타이머 설정.
+			FTimerHandle Handle;
+			GetWorld()->GetTimerManager().SetTimer(
+				Handle,
+				FTimerDelegate::CreateLambda([&]()
+					{
+						bCanAttack = true;
+
+						GetCharacterMovement()->SetMovementMode(
+							EMovementMode::MOVE_Walking
+						);
+					})
+				, AttackTime, false
+			);
+
+			// 애니메이션 재생.
+			PlayAttackAnimation();
+		}
+
+		// 서버에 공격 시작을 알림 (Server RPC 호출).
+		// 이때 서버에 공격 시작한 시간을 전달.
+		//float AttackStartTime = GetWorld()->GetTimeSeconds();
+		// 서버 시간을 기준으로 공격 시작 시간 보내기.
+		float AttackStartTime
+			= GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		ServerRPCAttack(AttackStartTime);
 	}
+}
+
+void AABCharacterPlayer::PlayAttackAnimation()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(ComboActionMontage);
 }
 
 void AABCharacterPlayer::AttackHitCheck()
@@ -389,54 +403,95 @@ void AABCharacterPlayer::AttackHitCheck()
 	}
 }
 
-void AABCharacterPlayer::ServerRPCAttack_Implementation()
+void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 {
+	// 공격 시작 처리.
+	bCanAttack = false;
+	OnRep_CanAttack();
+
+	// 서버-클라이언트의 시간 차이.
+	AttackTimeDifference = GetWorld()->GetTimeSeconds() - AttackStartTime;
+
 	// 로그 출력.
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+	AB_LOG(LogABNetwork, Log, TEXT("LagTime: %f"), AttackTimeDifference);
+
+	// 시간 값 보정. 타이머가 실행될 수 있도록 약간의 오프셋 적용.
+	AttackTimeDifference
+		= FMath::Clamp(AttackTimeDifference, 0.0f, AttackTime - 0.01f);
+
+	// 공격 종료 타이머 설정.
+	FTimerHandle Handle;
+	GetWorld()->GetTimerManager().SetTimer(
+		Handle,
+		FTimerDelegate::CreateLambda([&]() 
+			{
+				bCanAttack = false;
+				OnRep_CanAttack();
+			})
+		, AttackTime - AttackTimeDifference, false
+	);
+
+	// 공격 처리 시간 기록.
+	LastAttackStartTime = AttackStartTime;
+
+	// 애니메이션 재생.
+	PlayAttackAnimation();
 
 	// 클라이언트로부터 요청 받은 공격 명령을
 	// 다시 클라이언트에 전파 (서버 포함).
 	MulticastRPCAttack();
 }
 
-bool AABCharacterPlayer::ServerRPCAttack_Validate()
+bool AABCharacterPlayer::ServerRPCAttack_Validate(float AttackStartTime)
 {
-	return true;
+	// 공격 타이밍에 대한 검증 추가.
+	// 너무 짧은 시간에 공격이 반복되지 않았는지를 확인.
+	if (LastAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	// 현재 공격 시작한 시간과 이전에 공격했던 시간의 차이가
+	// 공격 애니메이션 길이보다 크면 인정.
+	return (AttackStartTime - LastAttackStartTime) > AttackTime;
 }
 
 void AABCharacterPlayer::MulticastRPCAttack_Implementation()
 {
-	// 로그 출력.
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+	//// 로그 출력.
+	//AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
 
-	// 서버 로직.
-	if (HasAuthority())
+	//// 서버 로직.
+	//if (HasAuthority())
+	//{
+	//	// 공격 중이라고 설정.
+	//	bCanAttack = false;
+
+	//	// 서버에서는 OnRep_ 함수 호출이 안되기 때문에 직접 호출.
+	//	OnRep_CanAttack();
+
+	//	// 공격 종료 처리를 위해 타이머 사용.
+	//	FTimerHandle Handle;
+	//	GetWorld()->GetTimerManager().SetTimer(
+	//		Handle,
+	//		FTimerDelegate::CreateLambda([&]()
+	//			{
+	//				// 다시 공격 가능한 상태로 설정.
+	//				bCanAttack = true;
+
+	//				// 서버에서는 OnRep_ 함수 호출이 안되기 때문에 직접 호출.
+	//				OnRep_CanAttack();
+	//			}),
+	//		AttackTime, false
+	//	);
+	//}
+
+	// 본인 클라와 서버가 아닌 다른 클라이언트에서는 애니메이션 재생.
+	if (!IsLocallyControlled())
 	{
-		// 공격 중이라고 설정.
-		bCanAttack = false;
-
-		// 서버에서는 OnRep_ 함수 호출이 안되기 때문에 직접 호출.
-		OnRep_CanAttack();
-
-		// 공격 종료 처리를 위해 타이머 사용.
-		FTimerHandle Handle;
-		GetWorld()->GetTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([&]()
-				{
-					// 다시 공격 가능한 상태로 설정.
-					bCanAttack = true;
-
-					// 서버에서는 OnRep_ 함수 호출이 안되기 때문에 직접 호출.
-					OnRep_CanAttack();
-				}),
-			AttackTime, false
-		);
+		PlayAttackAnimation();
+		
 	}
-
-	// 서버 포함 / 클라이언트 로직.
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->Montage_Play(ComboActionMontage);
 }
 
 void AABCharacterPlayer::OnRep_CanAttack()
