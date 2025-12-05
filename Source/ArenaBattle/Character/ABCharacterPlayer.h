@@ -104,6 +104,9 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
 
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCPlayAnimation(AABCharacterPlayer* CharacterToPlay);
+
 	// 클라이언트에서 충돌 판정을 한 뒤에 무언가 맞았을 때 호출하는 함수.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyHit(

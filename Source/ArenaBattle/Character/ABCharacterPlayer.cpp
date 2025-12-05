@@ -21,6 +21,7 @@
 #include "Net/UnrealNetwork.h"
 
 #include "GameFramework/GameStateBase.h"
+#include "EngineUtils.h"
 
 AABCharacterPlayer::AABCharacterPlayer()
 {
@@ -243,6 +244,12 @@ void AABCharacterPlayer::SetCharacterControlData(const UABCharacterControlData* 
 
 void AABCharacterPlayer::ShoulderMove(const FInputActionValue& Value)
 {
+	// 공격 중에는 이동 못하도록 처리.
+	if (!bCanAttack)
+	{
+		return;
+	}
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -265,6 +272,12 @@ void AABCharacterPlayer::ShoulderLook(const FInputActionValue& Value)
 
 void AABCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 {
+	// 공격 중에는 이동 못하도록 처리.
+	if (!bCanAttack)
+	{
+		return;
+	}
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	float InputSizeSquared = MovementVector.SquaredLength();
@@ -485,6 +498,16 @@ void AABCharacterPlayer::DrawDebugAttackRange(const FColor& DrawColor, FVector T
 #endif
 }
 
+void AABCharacterPlayer::ClientRPCPlayAnimation_Implementation(
+	AABCharacterPlayer* CharacterToPlay)
+{
+	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->PlayAttackAnimation();
+	}
+}
+
 void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 {
 	// 공격 시작 처리.
@@ -521,7 +544,26 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 
 	// 클라이언트로부터 요청 받은 공격 명령을
 	// 다시 클라이언트에 전파 (서버 포함).
-	MulticastRPCAttack();
+	//MulticastRPCAttack();
+
+	// PlayerController 순회.
+	for (auto PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		// 서버 거르기.
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				// SimulatedProxy에게 메시지 전달.
+				AABCharacterPlayer* OtherPlayer 
+					= Cast<AABCharacterPlayer>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCPlayAnimation(this);
+				}
+			}
+		}
+	}
 }
 
 bool AABCharacterPlayer::ServerRPCAttack_Validate(float AttackStartTime)
