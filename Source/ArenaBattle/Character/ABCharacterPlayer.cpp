@@ -347,8 +347,8 @@ void AABCharacterPlayer::PlayAttackAnimation()
 
 void AABCharacterPlayer::AttackHitCheck()
 {
-	// 공격 판정은 중요한 게임 로직이기 때문에 서버에서 처리.
-	if (HasAuthority())
+	// 입력을 전달한 클라이언트에서 공격 판정 진행.
+	if (IsLocallyControlled())
 	{
 		// 로그 출력.
 		AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
@@ -359,10 +359,11 @@ void AABCharacterPlayer::AttackHitCheck()
 		const float AttackRange = Stat->GetTotalStat().AttackRange;
 		const float AttackRadius = Stat->GetAttackRadius();
 		const float AttackDamage = Stat->GetTotalStat().Attack;
+		const FVector Forward = GetActorForwardVector();
 		const FVector Start
 			= GetActorLocation()
-			+ GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
-		const FVector End = Start + GetActorForwardVector() * AttackRange;
+			+ Forward * GetCapsuleComponent()->GetScaledCapsuleRadius();
+		const FVector End = Start + Forward * AttackRange;
 
 		bool HitDetected = GetWorld()->SweepSingleByChannel(
 			OutHitResult,
@@ -374,32 +375,81 @@ void AABCharacterPlayer::AttackHitCheck()
 			Params
 		);
 
-		if (HitDetected)
+		// 충돌 검증을 진행한 시간.
+		float HitCheckTime
+			= GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+
+		// 클라이언트.
+		if (!HasAuthority())
 		{
-			FDamageEvent DamageEvent;
-			OutHitResult.GetActor()->TakeDamage(
-				AttackDamage, DamageEvent, GetController(), this
-			);
+			// 무언가 맞았을 때.
+			if (HitDetected)
+			{
+				ServerRPCNotifyHit(OutHitResult, HitCheckTime);
+			}
+
+			// 안 맞았을 때.
+			else
+			{
+				ServerRPCNotifyMiss(Start, End, Forward, HitCheckTime);
+			}
 		}
 
-#if ENABLE_DRAW_DEBUG
+		// 서버.
+		else
+		{
+			if (HitDetected)
+			{
+				AttackHitConfirm(OutHitResult.GetActor());
+			}
+		}
 
-		FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
-		float CapsuleHalfHeight = AttackRange * 0.5f;
-		FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
+		//		if (HitDetected)
+		//		{
+		//			FDamageEvent DamageEvent;
+		//			OutHitResult.GetActor()->TakeDamage(
+		//				AttackDamage, DamageEvent, GetController(), this
+		//			);
+		//		}
+		//
+		//#if ENABLE_DRAW_DEBUG
+		//
+		//		FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
+		//		float CapsuleHalfHeight = AttackRange * 0.5f;
+		//		FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
+		//
+		//		DrawDebugCapsule(
+		//			GetWorld(),
+		//			CapsuleOrigin,
+		//			CapsuleHalfHeight,
+		//			AttackRadius,
+		//			FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(),
+		//			DrawColor,
+		//			false,
+		//			5.0f
+		//		);
+		//
+		//#endif
+	}
+}
 
-		DrawDebugCapsule(
-			GetWorld(),
-			CapsuleOrigin,
-			CapsuleHalfHeight,
-			AttackRadius,
-			FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(),
-			DrawColor,
-			false,
-			5.0f
+void AABCharacterPlayer::AttackHitConfirm(AActor* HitActor)
+{
+	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+
+	// 이 로직은 서버에서 처리.
+	if (HasAuthority())
+	{
+		// 공격 대미지.
+		const float AttackDamage = Stat->GetTotalStat().Attack;
+
+		FDamageEvent DamageEvent;
+		HitActor->TakeDamage(
+			AttackDamage,
+			DamageEvent,
+			GetController(),
+			this
 		);
-
-#endif
 	}
 }
 
@@ -423,7 +473,7 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 	FTimerHandle Handle;
 	GetWorld()->GetTimerManager().SetTimer(
 		Handle,
-		FTimerDelegate::CreateLambda([&]() 
+		FTimerDelegate::CreateLambda([&]()
 			{
 				bCanAttack = false;
 				OnRep_CanAttack();
@@ -490,8 +540,53 @@ void AABCharacterPlayer::MulticastRPCAttack_Implementation()
 	if (!IsLocallyControlled())
 	{
 		PlayAttackAnimation();
-		
+
 	}
+}
+
+void AABCharacterPlayer::ServerRPCNotifyHit_Implementation(
+	const FHitResult& HitResult, float HitCheckTime)
+{
+	// 맞은 액터.
+	AActor* HitActor = HitResult.GetActor();
+	if (HitActor)
+	{
+		// 맞은 곳의 정보를 활용해 로직 검증.
+		const FVector HitLocation = HitResult.Location;
+
+		// 현재 캐릭터의 바운딩 박스 정보.
+		const FBox HitBox = HitActor->GetComponentsBoundingBox();
+
+		// 바운딩 박스 가운데 값.
+		const FVector ActorBoxCenter = HitBox.GetCenter();
+
+		// 문제가 있는지 검증.
+		if (FVector::DistSquared(HitLocation, ActorBoxCenter)
+			<= )
+	}
+}
+
+bool AABCharacterPlayer::ServerRPCNotifyHit_Validate(
+	const FHitResult& HitResult, float HitCheckTime)
+{
+	return true;
+}
+
+void AABCharacterPlayer::ServerRPCNotifyMiss_Implementation(
+	FVector TraceStart,
+	FVector TraceEnd,
+	FVector TraceDir,
+	float HitCheckTime)
+{
+}
+
+bool AABCharacterPlayer::ServerRPCNotifyMiss_Validate(
+	FVector TraceStart,
+	FVector TraceEnd,
+	FVector TraceDir,
+	float HitCheckTime)
+{
+	return true;
 }
 
 void AABCharacterPlayer::OnRep_CanAttack()

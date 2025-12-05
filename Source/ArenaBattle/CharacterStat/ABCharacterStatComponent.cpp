@@ -16,12 +16,15 @@ UABCharacterStatComponent::UABCharacterStatComponent()
 	bWantsInitializeComponent = true;
 
 	// 리플리케이션 활성화.
-	SetIsReplicated(true);
+	//SetIsReplicated(true);
 }
 
 void UABCharacterStatComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
+
+	// 리플리케이션 활성화.
+	SetIsReplicated(true);
 
 	SetLevelStat(CurrentLevel);
 	SetHp(BaseStat.MaxHp);

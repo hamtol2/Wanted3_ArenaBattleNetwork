@@ -84,6 +84,9 @@ protected:
 	// ABCharacterBAse에 있는 AttackHitCheck 오버라이드.
 	virtual void AttackHitCheck() override;
 
+	// 공격 판정 확인 함수.
+	void AttackHitConfirm(AActor* HitActor);
+
 	// Client -> Server 공격 명령 처리 요청에 사용되는 Server RPC.
 	// 클라이언트에서 공격을 시작한 시간을 보내도록 함수 업데이트.
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -92,6 +95,21 @@ protected:
 	// 클라이언트(서버 포함)에 공격 명령 전달을 위한 Multicast RPC.
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
+
+	// 클라이언트에서 충돌 판정을 한 뒤에 무언가 맞았을 때 호출하는 함수.
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCNotifyHit(
+		const FHitResult& HitResult, float HitCheckTime
+	);
+
+	// 클라이언트에서 충돌 판정을 한 뒤에 안 맞았을 때 호출하는 함수.
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCNotifyMiss(
+		FVector TraceStart,
+		FVector TraceEnd,
+		FVector TraceDir,
+		float HitCheckTime
+	);
 
 	UFUNCTION()
 	void OnRep_CanAttack();
@@ -108,6 +126,9 @@ protected:
 
 	// 클라이언트와 서버의 시간 차이 계산용 변수.
 	float AttackTimeDifference = 0.0f;
+
+	// 공격 판정에 사용할 거리 값(3미터).
+	float AcceptCheckDistance = 300.0f;
 
 // UI Section
 protected:
