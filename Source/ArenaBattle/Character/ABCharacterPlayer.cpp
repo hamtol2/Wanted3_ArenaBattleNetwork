@@ -398,6 +398,14 @@ void AABCharacterPlayer::AttackHitCheck()
 		// 서버.
 		else
 		{
+			FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
+			DrawDebugAttackRange(
+				DrawColor,
+				Start,
+				End,
+				Forward
+			);
+
 			if (HitDetected)
 			{
 				AttackHitConfirm(OutHitResult.GetActor());
@@ -453,6 +461,30 @@ void AABCharacterPlayer::AttackHitConfirm(AActor* HitActor)
 	}
 }
 
+void AABCharacterPlayer::DrawDebugAttackRange(const FColor& DrawColor, FVector TraceStart, FVector TraceEnd, FVector Forward)
+{
+#if ENABLE_DRAW_DEBUG
+
+	const float AttackRange = Stat->GetTotalStat().AttackRange;
+	const float AttackRadius = Stat->GetAttackRadius();
+
+	FVector CapsuleOrigin = TraceStart + (TraceEnd - TraceStart) * 0.5f;
+	float CapsuleHalfHeight = AttackRange * 0.5f;
+
+	DrawDebugCapsule(
+		GetWorld(),
+		CapsuleOrigin,
+		CapsuleHalfHeight,
+		AttackRadius,
+		FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(),
+		DrawColor,
+		false,
+		5.0f
+	);
+
+#endif
+}
+
 void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 {
 	// 공격 시작 처리.
@@ -475,7 +507,7 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 		Handle,
 		FTimerDelegate::CreateLambda([&]()
 			{
-				bCanAttack = false;
+				bCanAttack = true;
 				OnRep_CanAttack();
 			})
 		, AttackTime - AttackTimeDifference, false
@@ -562,31 +594,51 @@ void AABCharacterPlayer::ServerRPCNotifyHit_Implementation(
 
 		// 문제가 있는지 검증.
 		if (FVector::DistSquared(HitLocation, ActorBoxCenter)
-			<= )
+			<= AcceptCheckDistance * AcceptCheckDistance)
+		{
+			// 공격 허용.
+			AttackHitConfirm(HitActor);
+		}
 	}
 }
 
 bool AABCharacterPlayer::ServerRPCNotifyHit_Validate(
 	const FHitResult& HitResult, float HitCheckTime)
 {
-	return true;
+	// 이전에 공격한 적이 없다면 검증 안함.
+	if (LastAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	// 공격 시작이 후에 공격 판정까지 걸린 시간 값이
+	// 문제가 없는지 확인.
+	return (HitCheckTime - LastAttackStartTime) > AcceptMinCheckTime;
 }
 
 void AABCharacterPlayer::ServerRPCNotifyMiss_Implementation(
-	FVector TraceStart,
-	FVector TraceEnd,
-	FVector TraceDir,
+	FVector_NetQuantizeNormal TraceStart,
+	FVector_NetQuantizeNormal TraceEnd,
+	FVector_NetQuantizeNormal TraceDir,
 	float HitCheckTime)
 {
 }
 
 bool AABCharacterPlayer::ServerRPCNotifyMiss_Validate(
-	FVector TraceStart,
-	FVector TraceEnd,
-	FVector TraceDir,
+	FVector_NetQuantizeNormal TraceStart,
+	FVector_NetQuantizeNormal TraceEnd,
+	FVector_NetQuantizeNormal TraceDir,
 	float HitCheckTime)
 {
-	return true;
+	// 이전에 공격한 적이 없다면 검증 안함.
+	if (LastAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	// 공격 시작이 후에 공격 판정까지 걸린 시간 값이
+	// 문제가 없는지 확인.
+	return (HitCheckTime - LastAttackStartTime) > AcceptMinCheckTime;
 }
 
 void AABCharacterPlayer::OnRep_CanAttack()

@@ -87,6 +87,14 @@ protected:
 	// 공격 판정 확인 함수.
 	void AttackHitConfirm(AActor* HitActor);
 
+	// 충돌 감지 영역을 그릴 때 사용할 디버깅 함수.
+	void DrawDebugAttackRange(
+		const FColor& DrawColor, 
+		FVector TraceStart,
+		FVector TraceEnd,
+		FVector Forward
+	);
+
 	// Client -> Server 공격 명령 처리 요청에 사용되는 Server RPC.
 	// 클라이언트에서 공격을 시작한 시간을 보내도록 함수 업데이트.
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -105,9 +113,9 @@ protected:
 	// 클라이언트에서 충돌 판정을 한 뒤에 안 맞았을 때 호출하는 함수.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyMiss(
-		FVector TraceStart,
-		FVector TraceEnd,
-		FVector TraceDir,
+		FVector_NetQuantizeNormal TraceStart,
+		FVector_NetQuantizeNormal TraceEnd,
+		FVector_NetQuantizeNormal TraceDir,
 		float HitCheckTime
 	);
 
@@ -129,6 +137,10 @@ protected:
 
 	// 공격 판정에 사용할 거리 값(3미터).
 	float AcceptCheckDistance = 300.0f;
+
+	// 공격 판정은 애니메이션 몽타주의 노티파이로 진행.
+	// 이 시간이 대략 0.233초 정도.
+	float AcceptMinCheckTime = 0.15f;
 
 // UI Section
 protected:
