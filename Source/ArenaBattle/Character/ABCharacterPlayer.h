@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -17,7 +17,7 @@ class ARENABATTLE_API AABCharacterPlayer : public AABCharacterBase, public IABCh
 	GENERATED_BODY()
 	
 public:
-	AABCharacterPlayer();
+	AABCharacterPlayer(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -65,6 +65,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> AttackAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> TeleportAction;
+
 	void ShoulderMove(const FInputActionValue& Value);
 	void ShoulderLook(const FInputActionValue& Value);
 
@@ -72,22 +75,22 @@ protected:
 
 	ECharacterControlType CurrentCharacterControlType;
 
-	// ÇÁ·ÎÆÛÆ¼¸¦ ¸®ÇÃ¸®ÄÉÀÌ¼Ç¿¡ µî·Ï.
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ã¸ï¿½ï¿½ï¿½ï¿½Ì¼Ç¿ï¿½ ï¿½ï¿½ï¿½.
 	virtual void GetLifetimeReplicatedProps(
 		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void Attack();
 
-	// °ø°Ý ¾Ö´Ï¸ÞÀÌ¼Ç Àç»ý ÇÔ¼ö (Àç»ç¿ë °¡´ÉÇÏµµ·Ï).
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½).
 	void PlayAttackAnimation();
 
-	// ABCharacterBAse¿¡ ÀÖ´Â AttackHitCheck ¿À¹ö¶óÀÌµå.
+	// ABCharacterBAseï¿½ï¿½ ï¿½Ö´ï¿½ AttackHitCheck ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½.
 	virtual void AttackHitCheck() override;
 
-	// °ø°Ý ÆÇÁ¤ È®ÀÎ ÇÔ¼ö.
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ ï¿½Ô¼ï¿½.
 	void AttackHitConfirm(AActor* HitActor);
 
-	// Ãæµ¹ °¨Áö ¿µ¿ªÀ» ±×¸± ¶§ »ç¿ëÇÒ µð¹ö±ë ÇÔ¼ö.
+	// ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½.
 	void DrawDebugAttackRange(
 		const FColor& DrawColor, 
 		FVector TraceStart,
@@ -95,25 +98,25 @@ protected:
 		FVector Forward
 	);
 
-	// Client -> Server °ø°Ý ¸í·É Ã³¸® ¿äÃ»¿¡ »ç¿ëµÇ´Â Server RPC.
-	// Å¬¶óÀÌ¾ðÆ®¿¡¼­ °ø°ÝÀ» ½ÃÀÛÇÑ ½Ã°£À» º¸³»µµ·Ï ÇÔ¼ö ¾÷µ¥ÀÌÆ®.
+	// Client -> Server ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ ï¿½ï¿½Ã»ï¿½ï¿½ ï¿½ï¿½ï¿½Ç´ï¿½ Server RPC.
+	// Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCAttack(float AttackStartTime);
 
-	// Å¬¶óÀÌ¾ðÆ®(¼­¹ö Æ÷ÇÔ)¿¡ °ø°Ý ¸í·É Àü´ÞÀ» À§ÇÑ Multicast RPC.
+	// Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®(ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Multicast RPC.
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
 
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCPlayAnimation(AABCharacterPlayer* CharacterToPlay);
 
-	// Å¬¶óÀÌ¾ðÆ®¿¡¼­ Ãæµ¹ ÆÇÁ¤À» ÇÑ µÚ¿¡ ¹«¾ð°¡ ¸Â¾ÒÀ» ¶§ È£ÃâÇÏ´Â ÇÔ¼ö.
+	// Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Â¾ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyHit(
 		const FHitResult& HitResult, float HitCheckTime
 	);
 
-	// Å¬¶óÀÌ¾ðÆ®¿¡¼­ Ãæµ¹ ÆÇÁ¤À» ÇÑ µÚ¿¡ ¾È ¸Â¾ÒÀ» ¶§ È£ÃâÇÏ´Â ÇÔ¼ö.
+	// Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ú¿ï¿½ ï¿½ï¿½ ï¿½Â¾ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyMiss(
 		FVector_NetQuantizeNormal TraceStart,
@@ -125,27 +128,31 @@ protected:
 	UFUNCTION()
 	void OnRep_CanAttack();
 
-	// ÇöÀç °ø°Ý ÁßÀÎÁö ÆÇ´ÜÇÏ´Â º¯¼ö.
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ç´ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	UPROPERTY(ReplicatedUsing = OnRep_CanAttack)
 	uint8 bCanAttack : 1;
 
-	// Ã¹ ¹øÂ° °ø°Ý ¾Ö´Ï¸ÞÀÌ¼Ç Àç»ý ±æÀÌ(´ÜÀ§: ÃÊ).
+	// Ã¹ ï¿½ï¿½Â° ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½).
 	float AttackTime = 1.4667f;
 
-	// ÀÌÀü¿¡ °ø°Ý ½ÃÀÛÇÑ ½Ã°£ ±â·Ï¿ë.
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½Ï¿ï¿½.
 	float LastAttackStartTime = 0.0f;
 
-	// Å¬¶óÀÌ¾ðÆ®¿Í ¼­¹öÀÇ ½Ã°£ Â÷ÀÌ °è»ê¿ë º¯¼ö.
+	// Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	float AttackTimeDifference = 0.0f;
 
-	// °ø°Ý ÆÇÁ¤¿¡ »ç¿ëÇÒ °Å¸® °ª(3¹ÌÅÍ).
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½ ï¿½ï¿½(3ï¿½ï¿½ï¿½ï¿½).
 	float AcceptCheckDistance = 300.0f;
 
-	// °ø°Ý ÆÇÁ¤Àº ¾Ö´Ï¸ÞÀÌ¼Ç ¸ùÅ¸ÁÖÀÇ ³ëÆ¼ÆÄÀÌ·Î ÁøÇà.
-	// ÀÌ ½Ã°£ÀÌ ´ë·« 0.233ÃÊ Á¤µµ.
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½Ì·ï¿½ ï¿½ï¿½ï¿½ï¿½.
+	// ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ë·« 0.233ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	float AcceptMinCheckTime = 0.15f;
 
 // UI Section
 protected:
 	virtual void SetupHUDWidget(class UABHUDWidget* InHUDWidget) override;
+
+	// Teleport Section.
+protected:
+	void Teleport();
 };
