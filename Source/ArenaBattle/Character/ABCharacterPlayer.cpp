@@ -83,10 +83,10 @@ AABCharacterPlayer::AABCharacterPlayer(
 
 	CurrentCharacterControlType = ECharacterControlType::Quater;
 
-	// ������ ���� ���� �������� ����.
+	// 시작할 때는 공격 가능으로 설정.
 	bCanAttack = true;
 
-	// ���ø����̼� Ȱ��ȭ.
+	// 리플리케이션 활성화.
 	bReplicates = true;
 }
 
@@ -129,7 +129,7 @@ void AABCharacterPlayer::PossessedBy(AController* NewController)
 {
 	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
 
-	// PossessedBy ȣ��Ǳ� �� ������ ���� Ȯ��.
+	// PossessedBy 호출되기 전 액터의 소유 확인.
 	AActor* OwnerActor = GetOwner();
 	if (OwnerActor)
 	{
@@ -142,7 +142,7 @@ void AABCharacterPlayer::PossessedBy(AController* NewController)
 
 	Super::PossessedBy(NewController);
 
-	// PossessedBy ȣ��� �� ������ ���� Ȯ��.
+	// PossessedBy 호출된 후 액터의 소유 확인.
 	OwnerActor = GetOwner();
 	if (OwnerActor)
 	{
@@ -162,7 +162,7 @@ void AABCharacterPlayer::OnRep_Owner()
 
 	Super::OnRep_Owner();
 
-	// OnRep_Owner �Լ� ȣ�� �� ���� Ȯ��.
+	// OnRep_Owner 함수 호출 후 오너 확인.
 	AActor* OwnerActor = GetOwner();
 	if (OwnerActor)
 	{
@@ -254,7 +254,7 @@ void AABCharacterPlayer::SetCharacterControlData(const UABCharacterControlData* 
 
 void AABCharacterPlayer::ShoulderMove(const FInputActionValue& Value)
 {
-	// ���� �߿��� �̵� ���ϵ��� ó��.
+	// 공격 중에는 이동 못하도록 처리.
 	if (!bCanAttack)
 	{
 		return;
@@ -282,7 +282,7 @@ void AABCharacterPlayer::ShoulderLook(const FInputActionValue& Value)
 
 void AABCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 {
-	// ���� �߿��� �̵� ���ϵ��� ó��.
+	// 공격 중에는 이동 못하도록 처리.
 	if (!bCanAttack)
 	{
 		return;
@@ -313,7 +313,7 @@ void AABCharacterPlayer::GetLifetimeReplicatedProps(
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// ������Ƽ ���.
+	// 프로퍼티 등록.
 	DOREPLIFETIME(AABCharacterPlayer, bCanAttack);
 }
 
@@ -321,10 +321,10 @@ void AABCharacterPlayer::Attack()
 {
 	//ProcessComboCommand();
 
-	// ���� ������ ���.
+	// 공격 가능한 경우.
 	if (bCanAttack)
 	{
-		// Ŭ���̾�Ʈ.
+		// 클라이언트.
 		if (!HasAuthority())
 		{
 			bCanAttack = false;
@@ -333,7 +333,7 @@ void AABCharacterPlayer::Attack()
 				EMovementMode::MOVE_None
 			);
 
-			// ���� ���� ó���� ���� Ÿ�̸� ����.
+			// 공격 종료 처리를 위한 타이머 설정.
 			FTimerHandle Handle;
 			GetWorld()->GetTimerManager().SetTimer(
 				Handle,
@@ -348,14 +348,14 @@ void AABCharacterPlayer::Attack()
 				, AttackTime, false
 			);
 
-			// �ִϸ��̼� ���.
+			// 애니메이션 재생.
 			PlayAttackAnimation();
 		}
 
-		// ������ ���� ������ �˸� (Server RPC ȣ��).
-		// �̶� ������ ���� ������ �ð��� ����.
+		// 서버에 공격 시작을 알림 (Server RPC 호출).
+		// 이때 서버에 공격 시작한 시간을 전달.
 		//float AttackStartTime = GetWorld()->GetTimeSeconds();
-		// ���� �ð��� �������� ���� ���� �ð� ������.
+		// 서버 시간을 기준으로 공격 시작 시간 보내기.
 		float AttackStartTime
 			= GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 		ServerRPCAttack(AttackStartTime);
@@ -370,10 +370,10 @@ void AABCharacterPlayer::PlayAttackAnimation()
 
 void AABCharacterPlayer::AttackHitCheck()
 {
-	// �Է��� ������ Ŭ���̾�Ʈ���� ���� ���� ����.
+	// 입력을 전달한 클라이언트에서 공격 판정 진행.
 	if (IsLocallyControlled())
 	{
-		// �α� ���.
+		// 로그 출력.
 		AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
 
 		FHitResult OutHitResult;
@@ -398,27 +398,27 @@ void AABCharacterPlayer::AttackHitCheck()
 			Params
 		);
 
-		// �浹 ������ ������ �ð�.
+		// 충돌 검증을 진행한 시간.
 		float HitCheckTime
 			= GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
-		// Ŭ���̾�Ʈ.
+		// 클라이언트.
 		if (!HasAuthority())
 		{
-			// ���� �¾��� ��.
+			// 무언가 맞았을 때.
 			if (HitDetected)
 			{
 				ServerRPCNotifyHit(OutHitResult, HitCheckTime);
 			}
 
-			// �� �¾��� ��.
+			// 안 맞았을 때.
 			else
 			{
 				ServerRPCNotifyMiss(Start, End, Forward, HitCheckTime);
 			}
 		}
 
-		// ����.
+		// 서버.
 		else
 		{
 			FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
@@ -468,10 +468,10 @@ void AABCharacterPlayer::AttackHitConfirm(AActor* HitActor)
 {
 	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
 
-	// �� ������ �������� ó��.
+	// 이 로직은 서버에서 처리.
 	if (HasAuthority())
 	{
-		// ���� �����.
+		// 공격 대미지.
 		const float AttackDamage = Stat->GetTotalStat().Attack;
 
 		FDamageEvent DamageEvent;
@@ -520,21 +520,21 @@ void AABCharacterPlayer::ClientRPCPlayAnimation_Implementation(
 
 void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 {
-	// ���� ���� ó��.
+	// 공격 시작 처리.
 	bCanAttack = false;
 	OnRep_CanAttack();
 
-	// ����-Ŭ���̾�Ʈ�� �ð� ����.
+	// 서버-클라이언트의 시간 차이.
 	AttackTimeDifference = GetWorld()->GetTimeSeconds() - AttackStartTime;
 
-	// �α� ���.
+	// 로그 출력.
 	AB_LOG(LogABNetwork, Log, TEXT("LagTime: %f"), AttackTimeDifference);
 
-	// �ð� �� ����. Ÿ�̸Ӱ� ����� �� �ֵ��� �ణ�� ������ ����.
+	// 시간 값 보정. 타이머가 실행될 수 있도록 약간의 오프셋 적용.
 	AttackTimeDifference
 		= FMath::Clamp(AttackTimeDifference, 0.0f, AttackTime - 0.01f);
 
-	// ���� ���� Ÿ�̸� ����.
+	// 공격 종료 타이머 설정.
 	FTimerHandle Handle;
 	GetWorld()->GetTimerManager().SetTimer(
 		Handle,
@@ -546,25 +546,25 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 		, AttackTime - AttackTimeDifference, false
 	);
 
-	// ���� ó�� �ð� ���.
+	// 공격 처리 시간 기록.
 	LastAttackStartTime = AttackStartTime;
 
-	// �ִϸ��̼� ���.
+	// 애니메이션 재생.
 	PlayAttackAnimation();
 
-	// Ŭ���̾�Ʈ�κ��� ��û ���� ���� ������
-	// �ٽ� Ŭ���̾�Ʈ�� ���� (���� ����).
+	// 클라이언트로부터 요청 받은 공격 명령을
+	// 다시 클라이언트에 전파 (서버 포함).
 	//MulticastRPCAttack();
 
-	// PlayerController ��ȸ.
+	// PlayerController 순회.
 	for (auto PlayerController : TActorRange<APlayerController>(GetWorld()))
 	{
-		// ���� �Ÿ���.
+		// 서버 거르기.
 		if (PlayerController && GetController() != PlayerController)
 		{
 			if (!PlayerController->IsLocalController())
 			{
-				// SimulatedProxy���� �޽��� ����.
+				// SimulatedProxy에게 메시지 전달.
 				AABCharacterPlayer* OtherPlayer 
 					= Cast<AABCharacterPlayer>(PlayerController->GetPawn());
 				if (OtherPlayer)
@@ -578,49 +578,49 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 
 bool AABCharacterPlayer::ServerRPCAttack_Validate(float AttackStartTime)
 {
-	// ���� Ÿ�ֿ̹� ���� ���� �߰�.
-	// �ʹ� ª�� �ð��� ������ �ݺ����� �ʾҴ����� Ȯ��.
+	// 공격 타이밍에 대한 검증 추가.
+	// 너무 짧은 시간에 공격이 반복되지 않았는지를 확인.
 	if (LastAttackStartTime == 0.0f)
 	{
 		return true;
 	}
 
-	// ���� ���� ������ �ð��� ������ �����ߴ� �ð��� ���̰�
-	// ���� �ִϸ��̼� ���̺��� ũ�� ����.
+	// 현재 공격 시작한 시간과 이전에 공격했던 시간의 차이가
+	// 공격 애니메이션 길이보다 크면 인정.
 	return (AttackStartTime - LastAttackStartTime) > AttackTime;
 }
 
 void AABCharacterPlayer::MulticastRPCAttack_Implementation()
 {
-	//// �α� ���.
+	//// 로그 출력.
 	//AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
 
-	//// ���� ����.
+	//// 서버 로직.
 	//if (HasAuthority())
 	//{
-	//	// ���� ���̶�� ����.
+	//	// 공격 중이라고 설정.
 	//	bCanAttack = false;
 
-	//	// ���������� OnRep_ �Լ� ȣ���� �ȵǱ� ������ ���� ȣ��.
+	//	// 서버에서는 OnRep_ 함수 호출이 안되기 때문에 직접 호출.
 	//	OnRep_CanAttack();
 
-	//	// ���� ���� ó���� ���� Ÿ�̸� ���.
+	//	// 공격 종료 처리를 위해 타이머 사용.
 	//	FTimerHandle Handle;
 	//	GetWorld()->GetTimerManager().SetTimer(
 	//		Handle,
 	//		FTimerDelegate::CreateLambda([&]()
 	//			{
-	//				// �ٽ� ���� ������ ���·� ����.
+	//				// 다시 공격 가능한 상태로 설정.
 	//				bCanAttack = true;
 
-	//				// ���������� OnRep_ �Լ� ȣ���� �ȵǱ� ������ ���� ȣ��.
+	//				// 서버에서는 OnRep_ 함수 호출이 안되기 때문에 직접 호출.
 	//				OnRep_CanAttack();
 	//			}),
 	//		AttackTime, false
 	//	);
 	//}
 
-	// ���� Ŭ��� ������ �ƴ� �ٸ� Ŭ���̾�Ʈ������ �ִϸ��̼� ���.
+	// 본인 클라와 서버가 아닌 다른 클라이언트에서는 애니메이션 재생.
 	if (!IsLocallyControlled())
 	{
 		PlayAttackAnimation();
@@ -631,24 +631,24 @@ void AABCharacterPlayer::MulticastRPCAttack_Implementation()
 void AABCharacterPlayer::ServerRPCNotifyHit_Implementation(
 	const FHitResult& HitResult, float HitCheckTime)
 {
-	// ���� ����.
+	// 맞은 액터.
 	AActor* HitActor = HitResult.GetActor();
 	if (HitActor)
 	{
-		// ���� ���� ������ Ȱ���� ���� ����.
+		// 맞은 곳의 정보를 활용해 로직 검증.
 		const FVector HitLocation = HitResult.Location;
 
-		// ���� ĳ������ �ٿ�� �ڽ� ����.
+		// 현재 캐릭터의 바운딩 박스 정보.
 		const FBox HitBox = HitActor->GetComponentsBoundingBox();
 
-		// �ٿ�� �ڽ� ��� ��.
+		// 바운딩 박스 가운데 값.
 		const FVector ActorBoxCenter = HitBox.GetCenter();
 
-		// ������ �ִ��� ����.
+		// 문제가 있는지 검증.
 		if (FVector::DistSquared(HitLocation, ActorBoxCenter)
 			<= AcceptCheckDistance * AcceptCheckDistance)
 		{
-			// ���� ���.
+			// 공격 허용.
 			AttackHitConfirm(HitActor);
 		}
 	}
@@ -657,14 +657,14 @@ void AABCharacterPlayer::ServerRPCNotifyHit_Implementation(
 bool AABCharacterPlayer::ServerRPCNotifyHit_Validate(
 	const FHitResult& HitResult, float HitCheckTime)
 {
-	// ������ ������ ���� ���ٸ� ���� ����.
+	// 이전에 공격한 적이 없다면 검증 안함.
 	if (LastAttackStartTime == 0.0f)
 	{
 		return true;
 	}
 
-	// ���� ������ �Ŀ� ���� �������� �ɸ� �ð� ����
-	// ������ ������ Ȯ��.
+	// 공격 시작이 후에 공격 판정까지 걸린 시간 값이
+	// 문제가 없는지 확인.
 	return (HitCheckTime - LastAttackStartTime) > AcceptMinCheckTime;
 }
 
@@ -682,14 +682,14 @@ bool AABCharacterPlayer::ServerRPCNotifyMiss_Validate(
 	FVector_NetQuantizeNormal TraceDir,
 	float HitCheckTime)
 {
-	// ������ ������ ���� ���ٸ� ���� ����.
+	// 이전에 공격한 적이 없다면 검증 안함.
 	if (LastAttackStartTime == 0.0f)
 	{
 		return true;
 	}
 
-	// ���� ������ �Ŀ� ���� �������� �ɸ� �ð� ����
-	// ������ ������ Ȯ��.
+	// 공격 시작이 후에 공격 판정까지 걸린 시간 값이
+	// 문제가 없는지 확인.
 	return (HitCheckTime - LastAttackStartTime) > AcceptMinCheckTime;
 }
 
@@ -697,14 +697,14 @@ void AABCharacterPlayer::OnRep_CanAttack()
 {
 	if (!bCanAttack)
 	{
-		// ���� �ÿ� �̵����� �ʵ��� ó��.
+		// 공격 시에 이동하지 않도록 처리.
 		GetCharacterMovement()->SetMovementMode(
 			EMovementMode::MOVE_None
 		);
 	}
 	else
 	{
-		// ������ ����Ǹ� �ٽ� �̵� �����ϵ��� ��� ����.
+		// 공격이 종료되면 다시 이동 가능하도록 모드 설정.
 		GetCharacterMovement()->SetMovementMode(
 			EMovementMode::MOVE_Walking
 		);

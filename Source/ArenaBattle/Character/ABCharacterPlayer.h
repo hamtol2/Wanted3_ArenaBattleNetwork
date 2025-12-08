@@ -75,48 +75,48 @@ protected:
 
 	ECharacterControlType CurrentCharacterControlType;
 
-	// ������Ƽ�� ���ø����̼ǿ� ���.
+	// 프로퍼티를 리플리케이션에 등록.
 	virtual void GetLifetimeReplicatedProps(
 		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void Attack();
 
-	// ���� �ִϸ��̼� ��� �Լ� (���� �����ϵ���).
+	// 공격 애니메이션 재생 함수 (재사용 가능하도록).
 	void PlayAttackAnimation();
 
-	// ABCharacterBAse�� �ִ� AttackHitCheck �������̵�.
+	// ABCharacterBAse에 있는 AttackHitCheck 오버라이드.
 	virtual void AttackHitCheck() override;
 
-	// ���� ���� Ȯ�� �Լ�.
+	// 공격 판정 확인 함수.
 	void AttackHitConfirm(AActor* HitActor);
 
-	// �浹 ���� ������ �׸� �� ����� ����� �Լ�.
+	// 충돌 감지 영역을 그릴 때 사용할 디버깅 함수.
 	void DrawDebugAttackRange(
-		const FColor& DrawColor, 
+		const FColor& DrawColor,
 		FVector TraceStart,
 		FVector TraceEnd,
 		FVector Forward
 	);
 
-	// Client -> Server ���� ��� ó�� ��û�� ���Ǵ� Server RPC.
-	// Ŭ���̾�Ʈ���� ������ ������ �ð��� �������� �Լ� ������Ʈ.
+	// Client -> Server 공격 명령 처리 요청에 사용되는 Server RPC.
+	// 클라이언트에서 공격을 시작한 시간을 보내도록 함수 업데이트.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCAttack(float AttackStartTime);
 
-	// Ŭ���̾�Ʈ(���� ����)�� ���� ��� ������ ���� Multicast RPC.
+	// 클라이언트(서버 포함)에 공격 명령 전달을 위한 Multicast RPC.
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
 
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCPlayAnimation(AABCharacterPlayer* CharacterToPlay);
 
-	// Ŭ���̾�Ʈ���� �浹 ������ �� �ڿ� ���� �¾��� �� ȣ���ϴ� �Լ�.
+	// 클라이언트에서 충돌 판정을 한 뒤에 무언가 맞았을 때 호출하는 함수.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyHit(
 		const FHitResult& HitResult, float HitCheckTime
 	);
 
-	// Ŭ���̾�Ʈ���� �浹 ������ �� �ڿ� �� �¾��� �� ȣ���ϴ� �Լ�.
+	// 클라이언트에서 충돌 판정을 한 뒤에 안 맞았을 때 호출하는 함수.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyMiss(
 		FVector_NetQuantizeNormal TraceStart,
@@ -128,24 +128,24 @@ protected:
 	UFUNCTION()
 	void OnRep_CanAttack();
 
-	// ���� ���� ������ �Ǵ��ϴ� ����.
+	// 현재 공격 중인지 판단하는 변수.
 	UPROPERTY(ReplicatedUsing = OnRep_CanAttack)
 	uint8 bCanAttack : 1;
 
-	// ù ��° ���� �ִϸ��̼� ��� ����(����: ��).
+	// 첫 번째 공격 애니메이션 재생 길이(단위: 초).
 	float AttackTime = 1.4667f;
 
-	// ������ ���� ������ �ð� ��Ͽ�.
+	// 이전에 공격 시작한 시간 기록용.
 	float LastAttackStartTime = 0.0f;
 
-	// Ŭ���̾�Ʈ�� ������ �ð� ���� ���� ����.
+	// 클라이언트와 서버의 시간 차이 계산용 변수.
 	float AttackTimeDifference = 0.0f;
 
-	// ���� ������ ����� �Ÿ� ��(3����).
+	// 공격 판정에 사용할 거리 값(3미터).
 	float AcceptCheckDistance = 300.0f;
 
-	// ���� ������ �ִϸ��̼� ��Ÿ���� ��Ƽ���̷� ����.
-	// �� �ð��� �뷫 0.233�� ����.
+	// 공격 판정은 애니메이션 몽타주의 노티파이로 진행.
+	// 이 시간이 대략 0.233초 정도.
 	float AcceptMinCheckTime = 0.15f;
 
 // UI Section
