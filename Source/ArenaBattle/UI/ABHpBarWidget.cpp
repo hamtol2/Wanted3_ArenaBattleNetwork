@@ -43,9 +43,10 @@ void UABHpBarWidget::UpdateStat(const FABCharacterStat& BaseStat, const FABChara
 	}
 }
 
-void UABHpBarWidget::UpdateHpBar(float NewCurrentHp)
+void UABHpBarWidget::UpdateHpBar(float NewCurrentHp, float NewMaxHp)
 {
 	CurrentHp = NewCurrentHp;
+	MaxHp = NewMaxHp;
 
 	ensure(MaxHp > 0.0f);
 	if (HpProgressBar)

@@ -27,7 +27,14 @@ void UABCharacterStatComponent::InitializeComponent()
 	SetIsReplicated(true);
 
 	SetLevelStat(CurrentLevel);
+	MaxHp = BaseStat.MaxHp;
 	SetHp(BaseStat.MaxHp);
+
+	// 스탯 변경 델리게이트에 함수 등록.
+	OnStatChanged.AddUObject(
+		this, 
+		&UABCharacterStatComponent::SetNewMaxHp
+	);
 }
 
 void UABCharacterStatComponent::SetLevelStat(int32 InNewLevel)
@@ -55,7 +62,7 @@ void UABCharacterStatComponent::SetHp(float NewHp)
 {
 	CurrentHp = FMath::Clamp<float>(NewHp, 0.0f, BaseStat.MaxHp);
 	
-	OnHpChanged.Broadcast(CurrentHp);
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
 }
 
 void UABCharacterStatComponent::BeginPlay()
@@ -78,19 +85,42 @@ void UABCharacterStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 
 	// 프로퍼티 등록.
 	DOREPLIFETIME(UABCharacterStatComponent, CurrentHp);
-	DOREPLIFETIME(UABCharacterStatComponent, BaseStat);
-	DOREPLIFETIME(UABCharacterStatComponent, ModifierStat);
+	DOREPLIFETIME(UABCharacterStatComponent, MaxHp);
+
+	DOREPLIFETIME_CONDITION(UABCharacterStatComponent, BaseStat, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(UABCharacterStatComponent, ModifierStat, COND_OwnerOnly);
+}
+
+void UABCharacterStatComponent::SetNewMaxHp(
+	const FABCharacterStat& InBaseStat, 
+	const FABCharacterStat& InModifierStat)
+{
+	// 기존의 MaxHp와 변경된 스탯의 MaxHp를 비교해서 차이가 있는지 확인.
+	float PrevMaxHp = MaxHp;
+	MaxHp = GetTotalStat().MaxHp;
+
+	// 차이가 있다면, HP 변경 이벤트 발행.
+	if (PrevMaxHp != MaxHp)
+	{
+		OnHpChanged.Broadcast(CurrentHp, MaxHp);
+	}
 }
 
 void UABCharacterStatComponent::OnRep_CurrentHp()
 {
 	AB_SUBLOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
 
-	OnHpChanged.Broadcast(CurrentHp);
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
 	if (CurrentHp <= UE_KINDA_SMALL_NUMBER)
 	{
 		OnHpZero.Broadcast();
 	}
+}
+
+void UABCharacterStatComponent::OnRep_MaxHp()
+{
+	AB_SUBLOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
 }
 
 void UABCharacterStatComponent::OnRep_BaseStat()
