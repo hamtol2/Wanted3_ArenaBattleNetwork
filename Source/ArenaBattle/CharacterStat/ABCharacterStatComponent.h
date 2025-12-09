@@ -54,10 +54,10 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	float AttackRadius;
 
-	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_BaseStat, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FABCharacterStat BaseStat;
 
-	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_ModifierStat, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FABCharacterStat ModifierStat;
 
 protected:
@@ -68,4 +68,10 @@ protected:
 
 	UFUNCTION()
 	void OnRep_CurrentHp();
+
+	UFUNCTION()
+	void OnRep_BaseStat();
+
+	UFUNCTION()
+	void OnRep_ModifierStat();
 };

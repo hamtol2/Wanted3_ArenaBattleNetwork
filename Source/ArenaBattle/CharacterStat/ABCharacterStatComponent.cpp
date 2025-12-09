@@ -78,6 +78,8 @@ void UABCharacterStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 
 	// 프로퍼티 등록.
 	DOREPLIFETIME(UABCharacterStatComponent, CurrentHp);
+	DOREPLIFETIME(UABCharacterStatComponent, BaseStat);
+	DOREPLIFETIME(UABCharacterStatComponent, ModifierStat);
 }
 
 void UABCharacterStatComponent::OnRep_CurrentHp()
@@ -89,5 +91,21 @@ void UABCharacterStatComponent::OnRep_CurrentHp()
 	{
 		OnHpZero.Broadcast();
 	}
+}
+
+void UABCharacterStatComponent::OnRep_BaseStat()
+{
+	AB_SUBLOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+
+	// 스탯 변경을 알리는 델리게이트 호출.
+	OnStatChanged.Broadcast(BaseStat, ModifierStat);
+}
+
+void UABCharacterStatComponent::OnRep_ModifierStat()
+{
+	AB_SUBLOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
+
+	// 스탯 변경을 알리는 델리게이트 호출.
+	OnStatChanged.Broadcast(BaseStat, ModifierStat);
 }
 

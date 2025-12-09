@@ -285,16 +285,23 @@ void AABCharacterBase::TakeItem(UABItemData* InItemData)
 
 void AABCharacterBase::DrinkPotion(UABItemData* InItemData)
 {
-	UABPotionItemData* PotionItemData = Cast<UABPotionItemData>(InItemData);
-	if (PotionItemData)
+	// 포션 아이템의 경우 시각적인 부분은 없고,
+	// 스탯만 변경되기 때문에 서버에서만 처리.
+	if (HasAuthority())
 	{
-		Stat->HealHp(PotionItemData->HealAmount);
+		UABPotionItemData* PotionItemData 
+			= Cast<UABPotionItemData>(InItemData);
+		if (PotionItemData)
+		{
+			Stat->HealHp(PotionItemData->HealAmount);
+		}
 	}
 }
 
 void AABCharacterBase::EquipWeapon(UABItemData* InItemData)
 {
-	UABWeaponItemData* WeaponItemData = Cast<UABWeaponItemData>(InItemData);
+	UABWeaponItemData* WeaponItemData 
+		= Cast<UABWeaponItemData>(InItemData);
 	if (WeaponItemData)
 	{
 		if (WeaponItemData->WeaponMesh.IsPending())
@@ -302,16 +309,31 @@ void AABCharacterBase::EquipWeapon(UABItemData* InItemData)
 			WeaponItemData->WeaponMesh.LoadSynchronous();
 		}
 		Weapon->SetSkeletalMesh(WeaponItemData->WeaponMesh.Get());
-		Stat->SetModifierStat(WeaponItemData->ModifierStat);
+		//Stat->SetModifierStat(WeaponItemData->ModifierStat);
+	}
+
+	// 서버 로직.
+	if (HasAuthority())
+	{
+		// 아이템 데이터 유효성 검사.
+		if (WeaponItemData)
+		{
+			Stat->SetModifierStat(WeaponItemData->ModifierStat);
+		}
 	}
 }
 
 void AABCharacterBase::ReadScroll(UABItemData* InItemData)
 {
-	UABScrollItemData* ScrollItemData = Cast<UABScrollItemData>(InItemData);
-	if (ScrollItemData)
+	// 스크롤 아이템의 경우 시각적인 부분은 없고,
+	// 스탯만 변경되기 때문에 서버에서만 처리.
+	if (HasAuthority())
 	{
-		Stat->AddBaseStat(ScrollItemData->BaseStat);
+		UABScrollItemData* ScrollItemData = Cast<UABScrollItemData>(InItemData);
+		if (ScrollItemData)
+		{
+			Stat->AddBaseStat(ScrollItemData->BaseStat);
+		}
 	}
 }
 
