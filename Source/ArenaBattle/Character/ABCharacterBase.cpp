@@ -291,7 +291,7 @@ void AABCharacterBase::DrinkPotion(UABItemData* InItemData)
 	// 스탯만 변경되기 때문에 서버에서만 처리.
 	if (HasAuthority())
 	{
-		UABPotionItemData* PotionItemData 
+		UABPotionItemData* PotionItemData
 			= Cast<UABPotionItemData>(InItemData);
 		if (PotionItemData)
 		{
@@ -302,7 +302,7 @@ void AABCharacterBase::DrinkPotion(UABItemData* InItemData)
 
 void AABCharacterBase::EquipWeapon(UABItemData* InItemData)
 {
-	UABWeaponItemData* WeaponItemData 
+	UABWeaponItemData* WeaponItemData
 		= Cast<UABWeaponItemData>(InItemData);
 	if (WeaponItemData)
 	{
@@ -353,4 +353,20 @@ void AABCharacterBase::ApplyStat(const FABCharacterStat& BaseStat, const FABChar
 {
 	float MovementSpeed = (BaseStat + ModifierStat).MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+}
+
+void AABCharacterBase::MeshLoadCompleted()
+{
+	if (MeshHandle.IsValid())
+	{
+		USkeletalMesh* SkeletalMesh
+			= Cast<USkeletalMesh>(MeshHandle->GetLoadedAsset());
+		if (SkeletalMesh)
+		{
+			GetMesh()->SetSkeletalMesh(SkeletalMesh);
+			GetMesh()->SetHiddenInGame(false);
+		}
+	}
+
+	MeshHandle->ReleaseHandle();
 }

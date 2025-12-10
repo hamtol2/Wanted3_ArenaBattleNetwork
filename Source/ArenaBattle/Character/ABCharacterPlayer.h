@@ -11,7 +11,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(config = ArenaBattle)
 class ARENABATTLE_API AABCharacterPlayer : public AABCharacterBase, public IABCharacterHUDInterface
 {
 	GENERATED_BODY()
@@ -27,6 +27,8 @@ protected:
 	
 	virtual void OnRep_Owner() override;
 	virtual void PostNetInit() override;
+
+	virtual void OnRep_PlayerState() override;
 
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -178,4 +180,9 @@ protected:
 		AActor* DamageCauser
 	) override;
 
+	// 플레이어 스테이트로부터 메시를 업데이트하는데 사용할 함수.
+	void UpdateMeshFromPlayerState();
+
+	UPROPERTY(config)
+	TArray<FSoftObjectPath> PlayerMeshes;
 };

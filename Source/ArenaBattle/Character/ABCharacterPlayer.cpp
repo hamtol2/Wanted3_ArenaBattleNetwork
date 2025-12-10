@@ -25,6 +25,9 @@
 #include "ABCharacterMovementComponent.h"
 
 #include "Components/WidgetComponent.h"
+#include "GameFramework/PlayerState.h"
+
+#include "Engine/AssetManager.h"
 
 AABCharacterPlayer::AABCharacterPlayer(
 	const FObjectInitializer& ObjectInitializer)
@@ -94,11 +97,7 @@ AABCharacterPlayer::AABCharacterPlayer(
 
 void AABCharacterPlayer::PostInitializeComponents()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
-
 	Super::PostInitializeComponents();
-
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("End"));
 }
 
 void AABCharacterPlayer::BeginPlay()
@@ -138,33 +137,10 @@ void AABCharacterPlayer::SetDead()
 
 void AABCharacterPlayer::PossessedBy(AController* NewController)
 {
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("Begin"));
-
-	// PossessedBy 호출되기 전 액터의 소유 확인.
-	AActor* OwnerActor = GetOwner();
-	if (OwnerActor)
-	{
-		AB_LOG(LogABNetwork, Log, TEXT("Owner: %s"), *OwnerActor->GetName());
-	}
-	else
-	{
-		AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("No Owner"));
-	}
-
 	Super::PossessedBy(NewController);
 
-	// PossessedBy 호출된 후 액터의 소유 확인.
-	OwnerActor = GetOwner();
-	if (OwnerActor)
-	{
-		AB_LOG(LogABNetwork, Log, TEXT("Owner: %s"), *OwnerActor->GetName());
-	}
-	else
-	{
-		AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("No Owner"));
-	}
-
-	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("End"));
+	// 서버에서 메시 업데이트 함수 호출.
+	UpdateMeshFromPlayerState();
 }
 
 void AABCharacterPlayer::OnRep_Owner()
@@ -194,6 +170,14 @@ void AABCharacterPlayer::PostNetInit()
 	Super::PostNetInit();
 
 	AB_LOG(LogABNetwork, Log, TEXT("%s"), TEXT("End"));
+}
+
+void AABCharacterPlayer::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// 클라이언트에서 메시 업데이트 처리.
+	UpdateMeshFromPlayerState();
 }
 
 void AABCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -746,7 +730,7 @@ void AABCharacterPlayer::Teleport()
 void AABCharacterPlayer::ResetPlayer()
 {
 	// 애니메이션 정리.
-	UAnimInstance* AnimInstance 
+	UAnimInstance* AnimInstance
 		= GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
@@ -780,7 +764,7 @@ void AABCharacterPlayer::ResetPlayer()
 		if (ABGameMode)
 		{
 			// 랜덤 위치 구해서 설정.
-			FTransform NewTransform 
+			FTransform NewTransform
 				= ABGameMode->GetRandomStartTransform();
 			TeleportTo(
 				NewTransform.GetLocation(),
@@ -819,7 +803,7 @@ float AABCharacterPlayer::TakeDamage(
 		// 게임 모드에 알리기.
 		//IABGameInterface* TestGAmeMode 
 		//	= Cast<IABGameInterface>(GetWorld()->GetAuthGameMode())
-		IABGameInterface* ABGameMode 
+		IABGameInterface* ABGameMode
 			= GetWorld()->GetAuthGameMode<IABGameInterface>();
 		if (ABGameMode)
 		{
@@ -832,4 +816,25 @@ float AABCharacterPlayer::TakeDamage(
 	}
 
 	return ActualDamage;
+}
+
+void AABCharacterPlayer::UpdateMeshFromPlayerState()
+{
+	// 플레이어의 메시 인덱스 가져오기.
+	// 이 때 플레이어의 ID 값 활용해보기.
+	// 그런데 PlayerId 값은 플레이어 수를 넘어설 수 있음.
+	// 배열 인덱스로 사용하려면 이를 배열 인덱스 범위로 가둬야함.
+	int32 MeshIndex = FMath::Clamp(
+		GetPlayerState()->GetPlayerId() % PlayerMeshes.Num(),
+		0, PlayerMeshes.Num() - 1
+	);
+
+	// 메시 로드 요청.
+	MeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(
+		PlayerMeshes[MeshIndex],
+		FStreamableDelegate::CreateUObject(
+			this,
+			&AABCharacterBase::MeshLoadCompleted
+		)
+	);
 }
