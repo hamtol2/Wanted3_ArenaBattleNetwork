@@ -91,4 +91,8 @@ protected:
 
 	UFUNCTION()
 	void OnRep_ModifierStat();
+
+public:
+	// 스탯 초기화 함수.
+	void ResetStat();
 };

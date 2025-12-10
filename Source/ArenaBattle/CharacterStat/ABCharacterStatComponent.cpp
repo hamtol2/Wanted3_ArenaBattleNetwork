@@ -26,9 +26,10 @@ void UABCharacterStatComponent::InitializeComponent()
 	// 리플리케이션 활성화.
 	SetIsReplicated(true);
 
-	SetLevelStat(CurrentLevel);
-	MaxHp = BaseStat.MaxHp;
-	SetHp(BaseStat.MaxHp);
+	//SetLevelStat(CurrentLevel);
+	//MaxHp = BaseStat.MaxHp;
+	//SetHp(BaseStat.MaxHp);
+	ResetStat();
 
 	// 스탯 변경 델리게이트에 함수 등록.
 	OnStatChanged.AddUObject(
@@ -140,5 +141,17 @@ void UABCharacterStatComponent::OnRep_ModifierStat()
 
 	// 스탯 변경을 알리는 델리게이트 호출.
 	OnStatChanged.Broadcast(BaseStat, ModifierStat);
+}
+
+void UABCharacterStatComponent::ResetStat()
+{
+	// 스탯 초기화.
+	SetLevelStat(CurrentLevel);
+
+	// 그 외의 값 초기화.
+	MaxHp = BaseStat.MaxHp;
+
+	// HP 업데이트 (CurrentHp 설정).
+	SetHp(MaxHp);
 }
 

@@ -22,5 +22,14 @@ class ARENABATTLE_API IABGameInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void OnPlayerDead() = 0;
+
+	// 게임 모드에서 캐릭터 스폰(생성)위치를 반환할 때 사용할 함수.
+	virtual FTransform GetRandomStartTransform() const = 0;
+
+	// 플레이어가 죽었을 때 누가 죽였고, 누가 죽었는지 정보도 전달하도록.
+	virtual void OnPlayerKilled(
+		AController* Killer,
+		AController* KilledPlayer,
+		APawn* KilledPawn
+	) = 0;
 };

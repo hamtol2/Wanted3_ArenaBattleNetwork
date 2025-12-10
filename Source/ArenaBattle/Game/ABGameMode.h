@@ -11,7 +11,9 @@
  * 
  */
 UCLASS()
-class ARENABATTLE_API AABGameMode : public AGameModeBase, public IABGameInterface
+class ARENABATTLE_API AABGameMode 
+	: public AGameModeBase, 
+	public IABGameInterface
 {
 	GENERATED_BODY()
 	
@@ -24,7 +26,17 @@ public:
 
 	//virtual void PostLogin(APlayerController* NewPlayer) override;
 
-	//virtual void StartPlay() override;
+	virtual void StartPlay() override;
 
-	virtual void OnPlayerDead() override;
+	virtual FTransform GetRandomStartTransform() const override;
+
+	virtual void OnPlayerKilled(
+		AController* Killer,
+		AController* KilledPlayer,
+		APawn* KilledPawn
+	) override;
+
+protected:
+	// 플레이어 스타트 액터 배열.
+	TArray<TObjectPtr<class APlayerStart>> PlayerStartArray;
 };

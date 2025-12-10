@@ -168,4 +168,14 @@ public:
 	// 리스폰 관련 처리를 위한 타이머.
 	FTimerHandle AttackTimerHandle;
 	FTimerHandle DeadTimerHandle;
+
+protected:
+	// 대미지 처리 함수 오버라이드.
+	virtual float TakeDamage(
+		float DamageAmount, 
+		struct FDamageEvent const& DamageEvent, 
+		class AController* EventInstigator, 
+		AActor* DamageCauser
+	) override;
+
 };

@@ -24,6 +24,8 @@
 #include "EngineUtils.h"
 #include "ABCharacterMovementComponent.h"
 
+#include "Components/WidgetComponent.h"
+
 AABCharacterPlayer::AABCharacterPlayer(
 	const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UABCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -118,11 +120,20 @@ void AABCharacterPlayer::SetDead()
 {
 	Super::SetDead();
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-	if (PlayerController)
-	{
-		DisableInput(PlayerController);
-	}
+	// 리스폰(리셋) 처리하기 전에 잠시(5초) 대기.
+	GetWorld()->GetTimerManager().SetTimer(
+		DeadTimerHandle,
+		this,
+		&AABCharacterPlayer::ResetPlayer,
+		5.0f,
+		false
+	);
+
+	//APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	//if (PlayerController)
+	//{
+	//	DisableInput(PlayerController);
+	//}
 }
 
 void AABCharacterPlayer::PossessedBy(AController* NewController)
@@ -734,7 +745,49 @@ void AABCharacterPlayer::Teleport()
 
 void AABCharacterPlayer::ResetPlayer()
 {
+	// 애니메이션 정리.
+	UAnimInstance* AnimInstance 
+		= GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->StopAllMontages(0.0f);
+	}
 
+	// 스탯 초기화.
+
+	// 스탯의 레벨을 1로 설정.
+	Stat->SetLevelStat(1);
+
+	// 스탯 초기화.
+	Stat->ResetStat();
+
+	// 이동 모드 설정.
+	GetCharacterMovement()->SetMovementMode(
+		EMovementMode::MOVE_Walking
+	);
+
+	// 콜리전 켜기.
+	SetActorEnableCollision(true);
+
+	// UI 보이기.
+	HpBar->SetHiddenInGame(false);
+
+	// 서버의 경우, 플레이어 위치 조정.
+	if (HasAuthority())
+	{
+		IABGameInterface* ABGameMode
+			= GetWorld()->GetAuthGameMode<IABGameInterface>();
+		if (ABGameMode)
+		{
+			// 랜덤 위치 구해서 설정.
+			FTransform NewTransform 
+				= ABGameMode->GetRandomStartTransform();
+			TeleportTo(
+				NewTransform.GetLocation(),
+				NewTransform.GetRotation().Rotator()
+			);
+		}
+	}
 }
 
 void AABCharacterPlayer::ResetAttack()
@@ -744,4 +797,39 @@ void AABCharacterPlayer::ResetAttack()
 	GetCharacterMovement()->SetMovementMode(
 		EMovementMode::MOVE_Walking
 	);
+}
+
+float AABCharacterPlayer::TakeDamage(
+	float DamageAmount,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	// 상위 클래스에서 처리하는 로직을 처리.
+	const float ActualDamage = Super::TakeDamage(
+		DamageAmount,
+		DamageEvent,
+		EventInstigator,
+		DamageCauser
+	);
+
+	// HP를 모두 소진했으면(죽었으면) 게임 모드에 알리기.
+	if (Stat->GetCurrentHp() <= 0.0f)
+	{
+		// 게임 모드에 알리기.
+		//IABGameInterface* TestGAmeMode 
+		//	= Cast<IABGameInterface>(GetWorld()->GetAuthGameMode())
+		IABGameInterface* ABGameMode 
+			= GetWorld()->GetAuthGameMode<IABGameInterface>();
+		if (ABGameMode)
+		{
+			ABGameMode->OnPlayerKilled(
+				EventInstigator,
+				GetController(),
+				this
+			);
+		}
+	}
+
+	return ActualDamage;
 }
