@@ -155,4 +155,17 @@ protected:
 	// Teleport Section.
 protected:
 	void Teleport();
+
+	// PvP Section.
+public:
+
+	// 캐릭터가 죽었을 때 스탯과 모든 정보를 리셋하는 함수.
+	void ResetPlayer();
+
+	// 공격을 해제할 때 사용할 함수.
+	void ResetAttack();
+
+	// 리스폰 관련 처리를 위한 타이머.
+	FTimerHandle AttackTimerHandle;
+	FTimerHandle DeadTimerHandle;
 };

@@ -334,18 +334,13 @@ void AABCharacterPlayer::Attack()
 			);
 
 			// 공격 종료 처리를 위한 타이머 설정.
-			FTimerHandle Handle;
+			//FTimerHandle Handle;
 			GetWorld()->GetTimerManager().SetTimer(
-				Handle,
-				FTimerDelegate::CreateLambda([&]()
-					{
-						bCanAttack = true;
-
-						GetCharacterMovement()->SetMovementMode(
-							EMovementMode::MOVE_Walking
-						);
-					})
-				, AttackTime, false
+				AttackTimerHandle,
+				this,
+				&AABCharacterPlayer::ResetAttack,
+				AttackTime,
+				false
 			);
 
 			// 애니메이션 재생.
@@ -535,15 +530,13 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 		= FMath::Clamp(AttackTimeDifference, 0.0f, AttackTime - 0.01f);
 
 	// 공격 종료 타이머 설정.
-	FTimerHandle Handle;
+	//FTimerHandle Handle;
 	GetWorld()->GetTimerManager().SetTimer(
-		Handle,
-		FTimerDelegate::CreateLambda([&]()
-			{
-				bCanAttack = true;
-				OnRep_CanAttack();
-			})
-		, AttackTime - AttackTimeDifference, false
+		AttackTimerHandle,
+		this,
+		&AABCharacterPlayer::ResetAttack,
+		AttackTime - AttackTimeDifference,
+		false
 	);
 
 	// 공격 처리 시간 기록.
@@ -565,7 +558,7 @@ void AABCharacterPlayer::ServerRPCAttack_Implementation(float AttackStartTime)
 			if (!PlayerController->IsLocalController())
 			{
 				// SimulatedProxy에게 메시지 전달.
-				AABCharacterPlayer* OtherPlayer 
+				AABCharacterPlayer* OtherPlayer
 					= Cast<AABCharacterPlayer>(PlayerController->GetPawn());
 				if (OtherPlayer)
 				{
@@ -587,7 +580,8 @@ bool AABCharacterPlayer::ServerRPCAttack_Validate(float AttackStartTime)
 
 	// 현재 공격 시작한 시간과 이전에 공격했던 시간의 차이가
 	// 공격 애니메이션 길이보다 크면 인정.
-	return (AttackStartTime - LastAttackStartTime) > AttackTime;
+	return (AttackStartTime - LastAttackStartTime) >
+		(AttackTime - 0.4f);
 }
 
 void AABCharacterPlayer::MulticastRPCAttack_Implementation()
@@ -736,4 +730,18 @@ void AABCharacterPlayer::Teleport()
 	{
 		ABMovement->SetTeleportCommand();
 	}
+}
+
+void AABCharacterPlayer::ResetPlayer()
+{
+
+}
+
+void AABCharacterPlayer::ResetAttack()
+{
+	bCanAttack = true;
+
+	GetCharacterMovement()->SetMovementMode(
+		EMovementMode::MOVE_Walking
+	);
 }
