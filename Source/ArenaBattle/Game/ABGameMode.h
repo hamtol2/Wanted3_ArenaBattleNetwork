@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameMode.h"
 #include "Interface/ABGameInterface.h"
 #include "ABGameMode.generated.h"
 
@@ -12,7 +12,7 @@
  */
 UCLASS()
 class ARENABATTLE_API AABGameMode 
-	: public AGameModeBase, 
+	: public AGameMode, 
 	public IABGameInterface
 {
 	GENERATED_BODY()
@@ -35,6 +35,19 @@ public:
 		AController* KilledPlayer,
 		APawn* KilledPawn
 	) override;
+
+protected:
+	// 액터가 준비되면 호출되는 (게임 플레이와 무관) 이벤트 함수.
+	virtual void PostInitializeComponents() override;
+
+	// 타이머에 사용할 함수.
+	virtual void DefaultGameTimer();
+
+	// 경기를 종료할 때 호출할 함수.
+	virtual void FinishMatch();
+
+	// 타이머 핸들.
+	FTimerHandle GameTimerHandle;
 
 protected:
 	// 플레이어 스타트 액터 배열.
